@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# wget -qO- http://git.io/ITgkvw | sudo sh
-# or: su -c "wget -qO- http://git.io/ITgkvw | sh"
+# wget -qO- http://git.io/ITgkvw | sudo bash
+# or: su -c "wget -qO- http://git.io/ITgkvw | bash"
+
 
 if [[ -f /usr/bin/lsb_release ]]; then
     DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
@@ -41,7 +42,7 @@ else
 fi
 
 # Check if sudo
-if [ "$(whoami)" == "root" ]; then
+if [ "$(whoami)" == "root" ] && which sudo > /dev/null 2>&1; then
     sudo -k # sudo: read: command not found
 fi
 
