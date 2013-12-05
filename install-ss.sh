@@ -2,22 +2,29 @@
 
 # sudo ./install-ss.sh
 
-DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
+if [[ -f /usr/bin/lsb_release ]]; then
+    DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
+elif [ -f "/etc/redhat-release" ]; then
+    DISTRO=$(egrep -o 'Fedora|CentOS|Red.Hat' /etc/redhat-release)
+elif [ -f "/etc/debian_version" ]; then
+    DISTRO=='debian'
+fi
 echo $DISTRO
 
+export PATH=/usr/local/bin/:$PATH #for CentOS sudo which
 
 if [ $DISTRO == 'Debian' ]; then
     apt-get install build-essential autoconf libtool libssl-dev gcc
 #elif [ $DISTRO == 'Ubuntu' ]; then
 elif [ $DISTRO == 'CentOS' ]; then
-    yum install build-essential autoconf libtool openssl-devel gcc
+    yum install build-essential autoconf libtool gcc openssl openssl-devel make
 else
     echo unknown;exit;
 fi
 
 #type ss-server > /dev/null 2>&1 && echo 1
-if type ss-server > /dev/null 2>&1; then
-    echo ss-server has been installed.;
+if which ss-server > /dev/null 2>&1; then # sudo: type: command not found
+    echo ss-server has been installed.
 else
     #http://goo.gl/DNI7E
     #https://api.github.com/repos/madeye/shadowsocks-libev/zipball/
