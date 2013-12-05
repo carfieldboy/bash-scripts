@@ -1,13 +1,14 @@
 #!/bin/bash
 
-# sudo ./install-ss.sh
+# wget -qO- http://git.io/ITgkvw | sudo sh
+# or: su -c "wget -qO- http://git.io/ITgkvw | sh"
 
 if [[ -f /usr/bin/lsb_release ]]; then
     DISTRO=$(lsb_release -i | cut -d: -f2 | sed s/'^\t'//)
 elif [ -f "/etc/redhat-release" ]; then
     DISTRO=$(egrep -o 'Fedora|CentOS|Red.Hat' /etc/redhat-release)
 elif [ -f "/etc/debian_version" ]; then
-    DISTRO=='debian'
+    DISTRO=='Debian'
 fi
 echo $DISTRO
 
@@ -24,18 +25,24 @@ fi
 
 #type ss-server > /dev/null 2>&1 && echo 1
 if which ss-server > /dev/null 2>&1; then # sudo: type: command not found
-    echo ss-server has been installed.
+    echo '* ss-server has been installed.'
 else
-    #http://goo.gl/DNI7E
-    #https://api.github.com/repos/madeye/shadowsocks-libev/zipball/
-    #python:http://goo.gl/pYcWQc, nodejs:http://goo.gl/7bG1OT
-    if [ ! -f shadowsocks-libev.zip ]; then
-        wget -O shadowsocks-libev.zip http://git.io/OygkRA
-        unzip -q shadowsocks-libev.zip
+    # http://goo.gl/DNI7E
+    # https://api.github.com/repos/madeye/shadowsocks-libev/zipball/
+    # python:http://goo.gl/pYcWQc, nodejs:http://goo.gl/7bG1OT
+    ss=shadowsocks-libev
+    if [ ! -f $ss.zip ]; then
+        wget -O $ss.zip http://git.io/OygkRA
+        unzip -q $ss.zip
     fi
-    cd madeye-shadowsocks-libev*
+    cd *-$ss*
     ./configure && make
     make install
+fi
+
+# Check if sudo
+if [ "$(whoami)" == "root" ]; then
+    sudo -k # sudo: read: command not found
 fi
 
 read -p "* Setup and configuration. Continue (y/n)? "
@@ -51,15 +58,19 @@ read -p "* Enter ss-server port (default: $defPort): " port
 port=${port:-$defPort}
 
 echo 'start server...'
-# ss-server -s [server ip] -p [server port] -k [password] -m [encrypt_method]
-#echo ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid
-#nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid
-nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid > nohup.out 2>&1
+running=$(ps aux | grep ss-server | grep -v "grep" | wc -l)
 
-if [ $(ps aux | grep ss-server | grep -v "grep" | wc -l) -eq 1 ]; then
-echo 'succeeded !'
+if [ ! $running -eq 1 ]; then
+    # ss-server -s [server ip] -p [server port] -k [password] -m [encrypt_method]
+    # echo ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid
+    nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid > nohup.out 2>&1
+    if [ $running -eq 1 ]; then
+        echo 'succeeded !'
+    else
+        echo 'failed !'
+    fi
 else
-echo 'failed !'
+    echo '* ss-server has been running'
 fi
 
 echo 
@@ -67,12 +78,13 @@ echo '---------'
 echo "open port: iptables -A INPUT -p tcp -m tcp --dport $port -j ACCEPT"
 
 echo 'run on startup:'
+startup_cmd='"nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid"'
 if [ $DISTRO == 'Debian' ]; then
-    echo "\"nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid\" >> /etc/init.d/rc.local"
+    echo "$startup_cmd >> /etc/init.d/rc.local"
 elif [ $DISTRO == 'CentOS' ]; then
-    echo "\"nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid\" >> /etc/rc.local"
+    echo "$startup_cmd >> /etc/rc.local"
 fi
 
-echo 'kill ss-server: kill `cat /var/run/ss.pid`'
-echo 'print processes: ps aux|grep ss-server'
+echo '* print processes: ps aux|grep ss-server'
+echo '* kill ss-server: kill `cat /var/run/ss.pid`'
 
