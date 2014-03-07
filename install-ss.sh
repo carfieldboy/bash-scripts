@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# wget -qO- http://git.io/ITgkvw | sudo bash
+# wget -qO- http://git.io/ITgkvw --no-check-certificate | sudo bash
 # or: su -c "wget -qO- http://git.io/ITgkvw | bash"
 
 
