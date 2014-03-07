@@ -65,7 +65,8 @@ if [ ! $running -eq 1 ]; then
     # ss-server -s [server ip] -p [server port] -k [password] -m [encrypt_method]
     # echo ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid
     nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid > nohup.out 2>&1
-    if [ $running -eq 1 ]; then
+    chmod o+rw /var/run/ss.pid
+    if [ $(ps aux | grep ss-server | grep -v "grep" | wc -l) -eq 1 ]; then
         echo 'succeeded !'
     else
         echo 'failed !'
@@ -79,11 +80,11 @@ echo '---------'
 echo "open port: iptables -A INPUT -p tcp -m tcp --dport $port -j ACCEPT"
 
 echo 'run on startup:'
-startup_cmd='"nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid"'
+startup_cmd="nohup ss-server -s 0.0.0.0 -p $port -k $pwd -m aes-256-cfb -t 60 -f /var/run/ss.pid"
 if [ $DISTRO == 'Debian' ]; then
-    echo "$startup_cmd >> /etc/init.d/rc.local"
+    echo "'$startup_cmd' >> /etc/init.d/rc.local"
 elif [ $DISTRO == 'CentOS' ]; then
-    echo "$startup_cmd >> /etc/rc.local"
+    echo "'$startup_cmd' >> /etc/rc.local"
 fi
 
 echo '* print processes: ps aux|grep ss-server'
